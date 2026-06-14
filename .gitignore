@@ -2,12 +2,11 @@
 build/
 Build/
 
-# External dependencies build artifacts (exclude prebuilts, keep source)
+# External: exclude build artifacts only, keep source and prebuilt deps
 /extern/**/build/
 /extern/**/build-*/
-/extern/**/deps/
-/extern/**/vcpkg_installed/
 /extern/**/target/
+/extern/**/.git/
 
 # Temporary / generated
 docs/
