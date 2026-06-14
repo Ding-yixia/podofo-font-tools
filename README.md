@@ -51,15 +51,16 @@ podofo-font-tools/
 
 ## PoDoFo 源码说明
 
-仓库包含完整的 [PoDoFo](https://github.com/podofo/podofo) 源码（`extern/podofo/`，版本 1.1.0，**未做任何修改**）。
+仓库包含完整 [PoDoFo](https://github.com/podofo/podofo) 源码（`extern/podofo/`，基于 1.1.0）。
+**PoDoFo 库核心代码（`extern/podofo/src/podofo/`）未做任何修改**。
 
-### 本项目的代码变更范围
+### 本项目的代码变更
 
-本项目**没有修改 PoDoFo 库本身的任何源代码**。所有新增/修改的代码都在 `podofo-font-tools/` 项目目录内：
+#### 项目自有代码（`podofo-font-tools/`）
 
 | 文件 | 说明 |
 |------|------|
-| [`src/font-classifier/main.cpp`](src/font-classifier/main.cpp) | 字体分类与 PDF 生成程序（24KB），包含完整的 PDF 规范分类逻辑 |
+| [`src/font-classifier/main.cpp`](src/font-classifier/main.cpp) | 字体分类与 PDF 生成程序（24KB），完整的 PDF 规范分类逻辑 |
 | [`src/font-classifier/CMakeLists.txt`](src/font-classifier/CMakeLists.txt) | 字体分类器构建配置 |
 | [`CMakeLists.txt`](CMakeLists.txt) | 主构建系统，支持 MSVC `/MP` 并行编译 |
 | [`vcpkg.json`](vcpkg.json) | vcpkg 依赖清单 |
@@ -67,7 +68,18 @@ podofo-font-tools/
 | [`scripts/build.ps1`](scripts/build.ps1) | 构建脚本 |
 | [`scripts/run.ps1`](scripts/run.ps1) | 运行脚本 |
 
-### 字体嵌入机制的关键发现（PoDoFo 内部行为）
+#### PoDoFo Playground 修改（`extern/podofo/playground/`）
+
+在 PoDoFo 的 playground 中新增了测试程序，用于开发阶段的验证：
+
+| 文件 | 修改内容 |
+|------|----------|
+| [`extern/podofo/playground/main.cpp`](extern/podofo/playground/main.cpp) | **新增** — 字体分类演示程序（与 `src/font-classifier/main.cpp` 功能相同） |
+| [`extern/podofo/playground/CMakeLists.txt`](extern/podofo/playground/CMakeLists.txt) | **修改** — 添加 `podofo-font-demo` 构建目标，启用 `/MP` 并行编译和 `PODOFO_STATIC` 定义 |
+
+> 这些 playground 修改仅为开发和验证用途。项目的正式源码在 `src/font-classifier/` 中。
+
+### 字体嵌入机制的关键发现
 
 本项目在使用过程中发现了一个 PoDoFo 内部的重要行为（非 Bug，设计如此）：
 
@@ -77,21 +89,12 @@ PoDoFo 的 `PdfFontManager` 内部维护两个缓存表：
 - **`m_cachedQueries`** — 通过 `SearchFont(name)` 查找的字体（需要 fontconfig 或 Win32 GDI 支持），会被 `EmbedFonts()` 处理
 - **`m_cachedPaths`** — 通过 `GetOrCreateFont(filepath)` 直接加载的字体，不被 `EmbedFonts()` 处理
 
-因此，字体嵌入正确的使用方式是：
+字体嵌入的正确使用方式：
 1. 安装 `podofo[fontmanager,fontconfig]`（通过 vcpkg）
-2. 使用 `SearchFont()` 查找字体（非 `GetOrCreateFont()`）
+2. 使用 `SearchFont()` 查找字体
 3. 调用 `EmbedFonts()` 完成嵌入
 
-详细分析见 [BUILD.md → Technical Deep Dive](BUILD.md#technical-deep-dive-font-embedding-mechanism)。
-
-### Playground 测试代码变更
-
-项目开发期间，在 PoDoFo 的 playground 中编写了测试代码（**不包含在仓库中**）：
-
-- `playground/main.cpp` — 字体分类演示程序（与 `src/font-classifier/main.cpp` 功能相同）
-- `playground/CMakeLists.txt` — 添加了 `podofo-font-demo` 构建目标，启用 `/MP` 并行编译和 `PODOFO_STATIC` 定义
-
-这些 playground 修改仅为开发和验证期间的临时文件，项目的正式源码在 `src/font-classifier/` 中。
+详见 [BUILD.md → Technical Deep Dive](BUILD.md#technical-deep-dive-font-embedding-mechanism)。
 
 ## Dependencies
 
