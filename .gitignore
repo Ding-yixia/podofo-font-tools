@@ -1,0 +1,45 @@
+# Build output
+build/
+Build/
+
+# vcpkg
+vcpkg_installed/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+
+# Windows
+*.exe
+*.dll
+*.lib
+*.pdb
+*.exp
+*.obj
+*.ilk
+
+# Output PDFs
+output/
+*.pdf
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Python/Temp
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db

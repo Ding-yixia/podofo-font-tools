@@ -1,0 +1,12 @@
+{
+  "name": "podofo-font-tools",
+  "version": "1.0.0",
+  "description": "PDF Font Classification and Embedding Tool based on PoDoFo",
+  "homepage": "https://github.com/podofo/podofo-font-tools",
+  "dependencies": [
+    {
+      "name": "podofo",
+      "features": ["fontmanager", "fontconfig"]
+    }
+  ]
+}

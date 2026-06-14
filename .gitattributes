@@ -1,0 +1,27 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Source code
+*.cpp text
+*.h text
+*.hpp text
+*.c text
+*.h.in text
+
+# CMake
+CMakeLists.txt text
+*.cmake text
+
+# Scripts
+*.ps1 text
+*.bat text
+*.sh text
+
+# Documentation
+*.md text
+*.txt text
+
+# Config
+*.json text
+*.gitignore text
+*.gitattributes text

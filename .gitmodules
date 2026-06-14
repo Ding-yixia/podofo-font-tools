@@ -1,0 +1,3 @@
+[submodule "extern/podofo"]
+	path = extern/podofo
+	url = https://github.com/podofo/podofo.git
