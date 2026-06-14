@@ -49,15 +49,73 @@ podofo-font-tools/
 └── USAGE.md                    # 详细使用文档
 ```
 
+## PoDoFo 源码说明
+
+仓库包含完整的 [PoDoFo](https://github.com/podofo/podofo) 源码（`extern/podofo/`，版本 1.1.0，**未做任何修改**）。
+
+### 本项目的代码变更范围
+
+本项目**没有修改 PoDoFo 库本身的任何源代码**。所有新增/修改的代码都在 `podofo-font-tools/` 项目目录内：
+
+| 文件 | 说明 |
+|------|------|
+| [`src/font-classifier/main.cpp`](src/font-classifier/main.cpp) | 字体分类与 PDF 生成程序（24KB），包含完整的 PDF 规范分类逻辑 |
+| [`src/font-classifier/CMakeLists.txt`](src/font-classifier/CMakeLists.txt) | 字体分类器构建配置 |
+| [`CMakeLists.txt`](CMakeLists.txt) | 主构建系统，支持 MSVC `/MP` 并行编译 |
+| [`vcpkg.json`](vcpkg.json) | vcpkg 依赖清单 |
+| [`scripts/setup.ps1`](scripts/setup.ps1) | 环境配置脚本 |
+| [`scripts/build.ps1`](scripts/build.ps1) | 构建脚本 |
+| [`scripts/run.ps1`](scripts/run.ps1) | 运行脚本 |
+
+### 字体嵌入机制的关键发现（PoDoFo 内部行为）
+
+本项目在使用过程中发现了一个 PoDoFo 内部的重要行为（非 Bug，设计如此）：
+
+**`EmbedFonts()` 只处理通过 `SearchFont()` 创建的字体**。
+
+PoDoFo 的 `PdfFontManager` 内部维护两个缓存表：
+- **`m_cachedQueries`** — 通过 `SearchFont(name)` 查找的字体（需要 fontconfig 或 Win32 GDI 支持），会被 `EmbedFonts()` 处理
+- **`m_cachedPaths`** — 通过 `GetOrCreateFont(filepath)` 直接加载的字体，不被 `EmbedFonts()` 处理
+
+因此，字体嵌入正确的使用方式是：
+1. 安装 `podofo[fontmanager,fontconfig]`（通过 vcpkg）
+2. 使用 `SearchFont()` 查找字体（非 `GetOrCreateFont()`）
+3. 调用 `EmbedFonts()` 完成嵌入
+
+详细分析见 [BUILD.md → Technical Deep Dive](BUILD.md#technical-deep-dive-font-embedding-mechanism)。
+
+### Playground 测试代码变更
+
+项目开发期间，在 PoDoFo 的 playground 中编写了测试代码（**不包含在仓库中**）：
+
+- `playground/main.cpp` — 字体分类演示程序（与 `src/font-classifier/main.cpp` 功能相同）
+- `playground/CMakeLists.txt` — 添加了 `podofo-font-demo` 构建目标，启用 `/MP` 并行编译和 `PODOFO_STATIC` 定义
+
+这些 playground 修改仅为开发和验证期间的临时文件，项目的正式源码在 `src/font-classifier/` 中。
+
 ## Dependencies
 
-- **PoDoFo** 1.1.1+ - PDF manipulation library (源码在 `extern/podofo/`)
-- **vcpkg** (https://github.com/microsoft/vcpkg) - C++ package manager
-- **FreeType** - 字体光栅化 (通过 vcpkg 自动安装)
-- **Fontconfig** - 跨平台字体搜索 (通过 vcpkg 自动安装)
-- Windows SDK (for Win32 font enumeration)
+本项目通过 **vcpkg 清单模式** 自动管理所有 C++ 依赖（定义在 [`vcpkg.json`](vcpkg.json)）：
 
-所有 C++ 依赖通过 vcpkg 清单模式自动管理（定义在 `vcpkg.json`）。
+```json
+{
+  "dependencies": [
+    { "name": "podofo", "features": ["fontmanager", "fontconfig"] }
+  ]
+}
+```
+
+| 依赖 | 版本 | 用途 | 管理方式 |
+|------|------|------|----------|
+| **PoDoFo** | 1.1.1+ | PDF 处理核心库 | vcpkg 自动安装 |
+| **FreeType** | 2.14.3 | 字体光栅化 | vcpkg 自动安装 (PoDoFo 依赖) |
+| **Fontconfig** | 2.17.1 | 跨平台字体搜索 | vcpkg 自动安装 (PoDoFo 依赖) |
+| **OpenSSL** | 1.1.1 | PDF 加密支持 | vcpkg 自动安装 (PoDoFo 依赖) |
+| **zlib** | 1.2.11 | 数据压缩 | vcpkg 自动安装 (PoDoFo 依赖) |
+| **libxml2** | 2.14.5 | XML 解析 | vcpkg 自动安装 (PoDoFo 依赖) |
+| **Windows SDK** | — | Win32 API 字体枚举 | 随 Visual Studio 自带 |
+
+> **注意**：Fontconfig 特性是**必需**的。没有它，`SearchFont()` 无法定位系统字体，导致 `EmbedFonts()` 不会嵌入字体。详见 [Technical Deep Dive](BUILD.md#technical-deep-dive-font-embedding-mechanism)。
 
 ## Quick Start
 
