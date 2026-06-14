@@ -2,6 +2,12 @@
 build/
 Build/
 
+# External dependencies (use vcpkg instead of bundling)
+/extern/
+
+# Temporary / generated
+docs/
+
 # vcpkg
 vcpkg_installed/
 
