@@ -16,13 +16,11 @@ PDF 字体分类与嵌入工具，基于 [PoDoFo](https://github.com/podofo/podo
 ```
 output/
   TrueType/              TrueType/OpenType with "glyf" table
-    Arial/
-      full.pdf           全量嵌入 (FontFile2)
-      subset.pdf         子集嵌入
+    Arial_full.pdf       全量嵌入 (FontFile2)
+    Arial_subset.pdf     子集嵌入
   OpenType_CFF/          OpenType with CFF/CFF2 table
-    NotoSansSC/
-      full.pdf           全量嵌入 (FontFile3 /Subtype /OpenType)
-      subset.pdf         子集嵌入
+    NotoSansSC_full.pdf  全量嵌入 (FontFile3 /Subtype /OpenType)
+    NotoSansSC_subset.pdf 子集嵌入
   Type1/                 PostScript Type 1 (if found)
   Type1_CFF/             Type 1 in CFF format
   CIDFontType0_CFF/      CIDFont with CFF outlines

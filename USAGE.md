@@ -55,16 +55,13 @@ podofo-font-classifier.exe [options] <output_dir>
 ```
 output/
   TrueType/                    # PDF Subtype: /TrueType
-    FontName1/
-      full.pdf                 # Full embedding (DontSubset)
-      subset.pdf               # Subset embedding (default)
-    FontName2/
-      full.pdf
-      subset.pdf
+    FontName1_full.pdf          # Full embedding (DontSubset)
+    FontName1_subset.pdf        # Subset embedding (default)
+    FontName2_full.pdf
+    FontName2_subset.pdf
   OpenType_CFF/                # PDF Subtype: Type0 with CIDFontType0
-    FontName3/
-      full.pdf
-      subset.pdf
+    FontName3_full.pdf
+    FontName3_subset.pdf
   Type1/                       # PDF Subtype: /Type1
   Type1_CFF/                   # FontFile3 /Subtype /Type1C
   CIDFontType0_CFF/            # FontFile3 /Subtype /CIDFontType0C

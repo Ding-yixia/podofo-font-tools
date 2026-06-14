@@ -26,8 +26,8 @@
 //
 // Output structure:
 //   <output_dir>/
-//     TrueType/          <fontname>/full.pdf, <fontname>/subset.pdf
-//     OpenType_CFF/      <fontname>/full.pdf, <fontname>/subset.pdf
+//     TrueType/          <fontname>_full.pdf, <fontname>_subset.pdf
+//     OpenType_CFF/      <fontname>_full.pdf, <fontname>_subset.pdf
 //     Type1/             ...
 //     Type1_CFF/         ...
 //     CIDFontType0_CFF/  ...
@@ -303,15 +303,14 @@ public:
 
         string safeName = SanitizeFileName(font.FontName.empty() ?
             GetFileName(font.FilePath) : font.FontName);
-        string fontDir = catDir + "\\" + safeName;
 
         try
         {
-            fs::create_directories(fontDir);
+            fs::create_directories(catDir);
         }
         catch (...)
         {
-            cerr << "  Cannot create directory: " << fontDir << endl;
+            cerr << "  Cannot create directory: " << catDir << endl;
             return false;
         }
 
@@ -319,7 +318,7 @@ public:
              << font.FontName << endl;
 
         // Full-embed version (DontSubset)
-        string fullPath = fontDir + "\\full.pdf";
+        string fullPath = catDir + "\\" + safeName + "_full.pdf";
         bool fullOK = false;
         try
         {
@@ -332,7 +331,7 @@ public:
         }
 
         // Subset-embed version (default = subset enabled)
-        string subsetPath = fontDir + "\\subset.pdf";
+        string subsetPath = catDir + "\\" + safeName + "_subset.pdf";
         bool subsetOK = false;
         try
         {
@@ -556,8 +555,8 @@ void PrintUsage(const char* prog)
     cout << "  --help          Show help" << endl;
     cout << endl;
     cout << "Output:" << endl;
-    cout << "  <output_dir>/TrueType/<font>/full.pdf   (full embedding)" << endl;
-    cout << "  <output_dir>/TrueType/<font>/subset.pdf (subset embedding)" << endl;
+    cout << "  <output_dir>/TrueType/<font>_full.pdf   (full embedding)" << endl;
+    cout << "  <output_dir>/TrueType/<font>_subset.pdf (subset embedding)" << endl;
     cout << endl;
 }
 
