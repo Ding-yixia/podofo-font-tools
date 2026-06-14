@@ -3,7 +3,6 @@ build/
 Build/
 
 # Generated output PDFs (run locally to generate)
-output/
 
 # External build artifacts (keep source code)
 /extern/**/build/
