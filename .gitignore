@@ -2,52 +2,23 @@
 build/
 Build/
 
-# External: exclude build artifacts only, keep source and prebuilt deps
+# Generated output PDFs (run locally to generate)
+output/
+
+# External build artifacts (keep source code)
 /extern/**/build/
 /extern/**/build-*/
 /extern/**/target/
-/extern/**/.git/
-
-# Temporary / generated
-docs/
-
-# vcpkg
-vcpkg_installed/
-
-# IDE
-.vs/
-.vscode/
-*.user
-*.suo
-*.sdf
-*.opensdf
-*.VC.db
-*.VC.opendb
 
 # Windows
 *.exe
 *.dll
 *.lib
 *.pdb
-*.exp
-*.obj
-*.ilk
 
-# Output PDFs
-output/
-*.pdf
-
-# CMake
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
-*.cmake
-
-# Python/Temp
-__pycache__/
-*.pyc
-*.pyo
+# IDE
+.vs/
+.vscode/
 
 # OS
 .DS_Store
