@@ -276,7 +276,7 @@ private:
         if (utf8.empty()) return wstring();
         int len = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), (int)utf8.size(), nullptr, 0);
         if (len <= 0) return wstring();
-        wstring r((size_t)len, L'\0');
+        wstring r((size_t)len, L'\\0');
         MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), (int)utf8.size(), &r[0], len);
         return r;
     }
@@ -285,7 +285,7 @@ private:
         if (utf16.empty()) return string();
         int len = WideCharToMultiByte(CP_UTF8, 0, utf16.c_str(), (int)utf16.size(), nullptr, 0, nullptr, nullptr);
         if (len <= 0) return string();
-        string r((size_t)len, '\0');
+        string r((size_t)len, '\\0');
         WideCharToMultiByte(CP_UTF8, 0, utf16.c_str(), (int)utf16.size(), &r[0], len, nullptr, nullptr);
         return r;
     }
@@ -358,19 +358,16 @@ private:
         PdfFont* pdfFont = nullptr;
         string fontName = font.FontName.empty() ? GetFileName(font.FilePath) : font.FontName;
 
-        // Try SearchFont first (enables proper embedding via m_cachedQueries)
-        PdfFontSearchParams searchParams;
-        searchParams.MatchBehavior = PdfFontMatchBehaviorFlags::NormalizePattern;
-        try
+        // ---- Font Loading ----
+        // Strategy 1: SearchFont via name (enables proper font embedding)
         {
-            pdfFont = doc.GetFonts().SearchFont(fontName, searchParams, createParams);
-        }
-        catch (...)
-        {
-            pdfFont = nullptr;
+            PdfFontSearchParams sp;
+            sp.MatchBehavior = PdfFontMatchBehaviorFlags::NormalizePattern;
+            try { pdfFont = doc.GetFonts().SearchFont(fontName, sp, createParams); }
+            catch (...) { pdfFont = nullptr; }
         }
 
-        // Fallback: load from file path
+        // Strategy 2: Fallback to direct file path
         if (pdfFont == nullptr)
         {
             try
@@ -380,8 +377,21 @@ private:
             }
             catch (PdfError& e)
             {
-                cerr << "    Load error: " << (int)e.GetCode() << endl;
-                return false;
+                // Strategy 3: Try with PreferNonCID for variable/CFF fonts
+                PdfFontCreateParams fallbackParams;
+                fallbackParams.Flags = static_cast<PdfFontCreateFlags>(
+                    static_cast<int>(embedFlags) |
+                    static_cast<int>(PdfFontCreateFlags::PreferNonCID));
+                try
+                {
+                    pdfFont = &doc.GetFonts().GetOrCreateFont(
+                        font.FilePath, font.FaceIndex, fallbackParams);
+                }
+                catch (...)
+                {
+                    cerr << "    Load error: " << (int)e.GetCode() << endl;
+                    return false;
+                }
             }
             catch (exception& e)
             {
@@ -390,35 +400,45 @@ private:
             }
         }
 
+        // ---- PDF Page Setup ----
         auto& page = doc.GetPages().CreatePage(PdfPageSize::A4);
         PdfPainter painter;
         painter.SetCanvas(page);
 
         const double margin = 56.69;
         double y = page.GetRect().Height - margin;
-
         auto& metrics = pdfFont->GetMetrics();
-
-        // Draw sample text with the font itself
-        painter.TextState.SetFont(*pdfFont, 12.0);
-
         double tx = margin;
 
-        string line;
+        // ---- Sample Text Drawing (resilient to encoding errors) ----
+        bool sampleTextDrawn = false;
+        try
+        {
+            painter.TextState.SetFont(*pdfFont, 12.0);
 
-        line = "Uppercase: " + BuildSafeString(*pdfFont, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-        painter.DrawText(line, tx, y);
-        y -= 18;
+            string line;
+            line = "Uppercase: " + BuildSafeString(*pdfFont, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+            painter.DrawText(line, tx, y); y -= 18;
 
-        line = "Lowercase: " + BuildSafeString(*pdfFont, "abcdefghijklmnopqrstuvwxyz");
-        painter.DrawText(line, tx, y);
-        y -= 18;
+            line = "Lowercase: " + BuildSafeString(*pdfFont, "abcdefghijklmnopqrstuvwxyz");
+            painter.DrawText(line, tx, y); y -= 18;
 
-        line = "Symbols:   " + BuildSafeString(*pdfFont, "0123456789!@#$%&*()[]{}");
-        painter.DrawText(line, tx, y);
-        y -= 22;
+            line = "Symbols:   " + BuildSafeString(*pdfFont, "0123456789!@#$%&*()[]{}");
+            painter.DrawText(line, tx, y); y -= 22;
 
-        // Font metadata using Standard14 font
+            sampleTextDrawn = true;
+        }
+        catch (PdfError&)
+        {
+            // Sample text not supported by this font (e.g. symbol/variable fonts)
+            // Proceed with metadata only
+        }
+        catch (...) { }
+
+        if (!sampleTextDrawn)
+            y -= 22;
+
+        // ---- Font Metadata Label ----
         PdfFont* labelFont = nullptr;
         try
         {
@@ -427,42 +447,40 @@ private:
         }
         catch (...) { }
 
-        y -= 14;
+        // Draw metadata even if sample text failed
         string embedStr = (embedFlags & PdfFontCreateFlags::DontSubset) == PdfFontCreateFlags::DontSubset
             ? "Full Embedding" : "Subset Embedding";
+
+        if (labelFont && !sampleTextDrawn)
+        {
+            painter.DrawText("[Sample text not supported by this font type]", tx, y);
+            y -= 14;
+        }
+
+        y -= 14;
         if (labelFont)
         {
-            painter.DrawText(string("Font Name: ") + string(metrics.GetFontName()), tx, y);
-            y -= 14;
-            painter.DrawText(string("Family:    ") + string(metrics.GetFontFamilyName()), tx, y);
-            y -= 14;
-            painter.DrawText(string("Type:      ") + GetPdfSpecFontCategoryName(font.SpecCategory), tx, y);
-            y -= 14;
-            painter.DrawText(string("Embedding: ") + embedStr, tx, y);
-            y -= 14;
-            painter.DrawText(string("File:      ") + font.Extension, tx, y);
-            y -= 22;
+            painter.DrawText(string("Font Name: ") + string(metrics.GetFontName()), tx, y); y -= 14;
+            painter.DrawText(string("Family:    ") + string(metrics.GetFontFamilyName()), tx, y); y -= 14;
+            painter.DrawText(string("Type:      ") + GetPdfSpecFontCategoryName(font.SpecCategory), tx, y); y -= 14;
+            painter.DrawText(string("Embedding: ") + embedStr, tx, y); y -= 14;
+            painter.DrawText(string("File:      ") + font.Extension, tx, y); y -= 22;
 
             painter.TextState.SetFont(*labelFont, 8.0);
-            painter.DrawText("--- PDF Spec Classification ---", tx, y);
-            y -= 14;
-            painter.DrawText(GetPdfSpecFontCategoryDescription(font.SpecCategory), tx, y);
-            y -= 14;
+            painter.DrawText("--- PDF Spec Classification ---", tx, y); y -= 14;
+            painter.DrawText(GetPdfSpecFontCategoryDescription(font.SpecCategory), tx, y); y -= 14;
 
             string embedKey = GetEmbeddingKey(font.FileType);
-            painter.DrawText(string("Embedding key: ") + embedKey, tx, y);
-            y -= 14;
+            painter.DrawText(string("Embedding key: ") + embedKey, tx, y); y -= 14;
 
             string ffType = GetFontFileTypeInfo(font.FileType);
             if (!ffType.empty())
-            {
                 painter.DrawText(ffType, tx, y);
-                y -= 14;
-            }
         }
 
         painter.FinishDrawing();
 
+        // ---- Embed Font & Save ----
         doc.GetFonts().EmbedFonts();
         doc.Save(outputPath);
 
@@ -534,7 +552,7 @@ private:
         case PdfFontFileType::TrueType:
             return "Per PDF Spec Table 126: TrueType program in /FontFile2";
         case PdfFontFileType::OpenTypeCFF:
-            return "Per PDF Spec Table 126: OpenType CFF program in /FontFile3 /Subtype /OpenType";
+            return "Per PDF Spec Table 126: OpenType CFF in /FontFile3 /Subtype /OpenType";
         default:
             return "";
         }
@@ -547,7 +565,6 @@ private:
 void PrintUsage(const char* prog)
 {
     cout << "PoDoFo PDF Font Spec Classification Demo" << endl;
-    cout << "=========================================" << endl;
     cout << "Usage: " << prog << " [options] <output_dir>" << endl;
     cout << "  --dir <path>    Font directory (default: C:\\Windows\\Fonts)" << endl;
     cout << "  --max <N>       Max fonts to process (default: all)" << endl;
@@ -588,13 +605,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    cout << "========================================" << endl;
-    cout << "  PDF Font Spec Classification Demo" << endl;
-    cout << "========================================" << endl;
-    cout << "  Font directory: " << fontDir << endl;
-    cout << "  Output:         " << outputDir << endl;
-    cout << endl;
-
     try
     {
         auto fonts = WindowsFontScanner::ScanAndAnalyze(fontDir);
@@ -604,7 +614,6 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        // Print classification report
         cout << "\n=== PDF SPEC FONT TYPE CLASSIFICATION REPORT ===" << endl;
         map<PdfSpecFontCategory, unsigned> counts;
         for (auto& f : fonts)
@@ -618,7 +627,6 @@ int main(int argc, char* argv[])
             cout << "    " << GetPdfSpecFontCategoryDescription(cat) << endl;
         }
 
-        // Filter by type
         vector<FontInfo> selected;
         for (auto& f : fonts)
         {
