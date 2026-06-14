@@ -2,8 +2,12 @@
 build/
 Build/
 
-# External dependencies (use vcpkg instead of bundling)
-/extern/
+# External dependencies build artifacts (exclude prebuilts, keep source)
+/extern/**/build/
+/extern/**/build-*/
+/extern/**/deps/
+/extern/**/vcpkg_installed/
+/extern/**/target/
 
 # Temporary / generated
 docs/

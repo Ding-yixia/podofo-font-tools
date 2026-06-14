@@ -29,11 +29,37 @@ output/
   CIDFontType2_TrueType/ CIDFont with TrueType outlines
 ```
 
+## Repository Structure
+
+```
+podofo-font-tools/
+├── CMakeLists.txt              # 主构建文件
+├── vcpkg.json                  # vcpkg 依赖管理
+├── src/font-classifier/        # 字体分类程序源码
+│   ├── main.cpp
+│   └── CMakeLists.txt
+├── extern/podofo/              # PoDoFo 库完整源码 (bundled)
+│   ├── src/podofo/main/        # PoDoFo 核心 API
+│   ├── src/podofo/private/     # PoDoFo 内部实现
+│   ├── src/podofo/auxiliary/   # PoDoFo 工具类型
+│   └── 3rdparty/               # 附带的第三方库
+├── scripts/                    # 构建和运行脚本
+│   ├── setup.ps1
+│   ├── build.ps1
+│   └── run.ps1
+├── BUILD.md                    # 详细构建文档
+└── USAGE.md                    # 详细使用文档
+```
+
 ## Dependencies
 
-- [PoDoFo](https://github.com/podofo/podofo) 1.1.1+ - PDF manipulation library
-- [vcpkg](https://github.com/microsoft/vcpkg) - C++ package manager
+- **PoDoFo** 1.1.1+ - PDF manipulation library (源码在 `extern/podofo/`)
+- **vcpkg** (https://github.com/microsoft/vcpkg) - C++ package manager
+- **FreeType** - 字体光栅化 (通过 vcpkg 自动安装)
+- **Fontconfig** - 跨平台字体搜索 (通过 vcpkg 自动安装)
 - Windows SDK (for Win32 font enumeration)
+
+所有 C++ 依赖通过 vcpkg 清单模式自动管理（定义在 `vcpkg.json`）。
 
 ## Quick Start
 
@@ -44,9 +70,9 @@ cd vcpkg && .\bootstrap-vcpkg.bat
 
 # 2. Configure and build
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=<vcpkg_root>/scripts/buildsystems/vcpkg.cmake
-cmake --build build --config Release
+cmake --build build --config Release --parallel 12
 
-# 3. Run (Windows: generate PDFs for all TrueType fonts, max 10 fonts)
+# 3. Run (process 10 TrueType fonts)
 .\build\Release\podofo-font-classifier.exe --type truetype --max 10 output_dir
 ```
 
@@ -55,4 +81,5 @@ See [USAGE.md](USAGE.md) for detailed usage instructions.
 
 ## License
 
-MIT
+MIT (许可证覆盖自己编写的代码)
+PoDoFo 库本身遵循 LGPL-2.0-or-later OR MPL-2.0 许可证
