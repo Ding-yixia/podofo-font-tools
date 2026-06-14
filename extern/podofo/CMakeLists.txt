@@ -140,6 +140,13 @@ if (MSVC)
     # /we4287: unsigned/negative constant mismatch
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/std:c++17> $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus> /permissive- /utf-8 /we4287 /we4552 /W4)
 
+    # Enable multi-process compilation for parallel builds
+    cmake_host_system_information(RESULT NUM_CORES QUERY NUMBER_OF_PHYSICAL_CORES)
+    if(NOT NUM_CORES)
+        set(NUM_CORES 4)
+    endif()
+    add_compile_options("/MP${NUM_CORES}")
+
     # Microsoft deprecate certain POSIX functions that we use.
     # for now, turn off these warnings.
     add_compile_definitions(_CRT_SECURE_NO_DEPRECATE)
